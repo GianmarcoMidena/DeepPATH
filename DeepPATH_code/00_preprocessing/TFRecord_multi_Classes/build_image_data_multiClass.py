@@ -80,28 +80,28 @@ import json
 import numpy as np
 import tensorflow as tf
 
-tf.app.flags.DEFINE_string('directory', '/path_to_jpg_folder/',
+tf.compat.v1.app.flags.DEFINE_string('directory', '/path_to_jpg_folder/',
                            'Training data directory')
 
-tf.app.flags.DEFINE_string('output_directory', '/path_to_output_folder/',
+tf.compat.v1.app.flags.DEFINE_string('output_directory', '/path_to_output_folder/',
                            'Output data directory')
 
-tf.app.flags.DEFINE_string('labels_names', 'list_of_possible_label_names.txt',
+tf.compat.v1.app.flags.DEFINE_string('labels_names', 'list_of_possible_label_names.txt',
                            'Names of the possible output labels ordered as desired')
 
-tf.app.flags.DEFINE_string('labels', 'labels_for_each_slide.txt',
+tf.compat.v1.app.flags.DEFINE_string('labels', 'labels_for_each_slide.txt',
                            'File with two column: first is the patient or slide ID, second is the mutation name (same name as in "labels_names" file. An ID can appear several times)')
 
-tf.app.flags.DEFINE_integer('train_shards', 1024,
+tf.compat.v1.app.flags.DEFINE_integer('train_shards', 1024,
                             'Number of shards in training TFRecord files.')
 
-tf.app.flags.DEFINE_integer('validation_shards', 128,
+tf.compat.v1.app.flags.DEFINE_integer('validation_shards', 128,
                             'Number of shards in validation TFRecord files.')
 
-tf.app.flags.DEFINE_integer('num_threads', 8,
+tf.compat.v1.app.flags.DEFINE_integer('num_threads', 8,
                             'Number of threads to preprocess the images.')
 
-tf.app.flags.DEFINE_integer('PatientID', -1,
+tf.compat.v1.app.flags.DEFINE_integer('PatientID', -1,
                             'Number of digits used for the Patient ID (file names must start with patient ID. after sorting, will be located after test_ or valid_ or train_)')
 
 # tf.app.flags.DEFINE_integer('MaxNbImages', -1,
@@ -117,7 +117,7 @@ tf.app.flags.DEFINE_integer('PatientID', -1,
 # tf.app.flags.DEFINE_string('labels_file', '', 'Labels file')
 
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
 
 def _int64_feature(value):
@@ -168,15 +168,15 @@ class ImageCoder(object):
 
   def __init__(self):
     # Create a single Session to run all image coding calls.
-    self._sess = tf.Session()
+    self._sess = tf.compat.v1.Session()
 
     # Initializes function that converts PNG to JPEG data.
-    self._png_data = tf.placeholder(dtype=tf.string)
+    self._png_data = tf.compat.v1.placeholder(dtype=tf.string)
     image = tf.image.decode_png(self._png_data, channels=3)
     self._png_to_jpeg = tf.image.encode_jpeg(image, format='rgb', quality=100)
 
     # Initializes function that decodes RGB JPEG data.
-    self._decode_jpeg_data = tf.placeholder(dtype=tf.string)
+    self._decode_jpeg_data = tf.compat.v1.placeholder(dtype=tf.string)
     self._decode_jpeg = tf.image.decode_jpeg(self._decode_jpeg_data, channels=3)
 
   def png_to_jpeg(self, image_data):
@@ -215,7 +215,7 @@ def _process_image(filename, coder):
     width: integer, image width in pixels.
   """
   # Read the image file.
-  with tf.gfile.FastGFile(filename, 'rb') as f:
+  with tf.compat.v1.gfile.FastGFile(filename, 'rb') as f:
     image_data = f.read()
   #image_data = tf.gfile.FastGFile(filename, 'r').read()
 
@@ -272,7 +272,7 @@ def _process_image_files_batch(coder, thread_index, ranges, name, filenames,
     shard = thread_index * num_shards_per_batch + s
     output_filename = '%s-%.5d-of-%.5d' % (name, shard, num_shards)
     output_file = os.path.join(FLAGS.output_directory, output_filename)
-    writer = tf.python_io.TFRecordWriter(output_file)
+    writer = tf.io.TFRecordWriter(output_file)
 
     shard_counter = 0
     files_in_shard = np.arange(shard_ranges[s], shard_ranges[s + 1], dtype=int)
@@ -441,7 +441,7 @@ def _find_image_files(name, data_dir):
   # Construct the list of JPEG files and labels (file-dir).
   typeIm = name + '*.jpeg'
   jpeg_file_path = os.path.join(data_dir, typeIm)
-  matching_files = tf.gfile.Glob(jpeg_file_path)
+  matching_files = tf.io.gfile.glob(jpeg_file_path)
   #print("matching_files:")
   #print(matching_files)
   NbSlides = 0
@@ -534,5 +534,5 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tf.compat.v1.app.run()
 

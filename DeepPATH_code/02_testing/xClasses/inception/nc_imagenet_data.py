@@ -27,9 +27,9 @@ from inception.nc_dataset import Dataset
 
 import tensorflow as tf
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
-tf.app.flags.DEFINE_integer('ClassNumber', 5,
+tf.compat.v1.app.flags.DEFINE_integer('ClassNumber', 5,
                            """Number of classes.""")
 
 

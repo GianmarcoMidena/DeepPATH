@@ -22,15 +22,15 @@ import numpy as np
 #from inception.imagenet_data import ImagenetData
 import os
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('ImageSet_basename', 'test_',
+tf.compat.v1.app.flags.DEFINE_string('ImageSet_basename', 'test_',
                            """Either 'test_', 'valid_' or 'train_'.""")
 
-tf.app.flags.DEFINE_integer('nbr_of_classes', 10,
+tf.compat.v1.app.flags.DEFINE_integer('nbr_of_classes', 10,
                             """Number of possible classes.""")
 
-tf.app.flags.DEFINE_string('labels_names', '/ifs/home/coudrn01/NN/Lung/Test_All512pxTiled/9_10mutations/label_names.txt',
+tf.compat.v1.app.flags.DEFINE_string('labels_names', '/ifs/home/coudrn01/NN/Lung/Test_All512pxTiled/9_10mutations/label_names.txt',
                            'Names of the possible output labels ordered as desired')
 
 def main(unused_argv=None):
@@ -38,7 +38,7 @@ def main(unused_argv=None):
   input_path = os.path.join(FLAGS.data_dir, FLAGS.ImageSet_basename + '*')
   print(input_path)
   #FLAGS.batch_size = 30
-  data_files = tf.gfile.Glob(input_path)
+  data_files = tf.io.gfile.glob(input_path)
   print(data_files)
 
   mydict={}
@@ -83,4 +83,4 @@ def main(unused_argv=None):
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tf.compat.v1.app.run()

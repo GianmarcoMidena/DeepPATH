@@ -30,7 +30,7 @@ import tensorflow as tf
 
 from inception.slim import slim
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
 # If a model is trained using multiple GPUs, prefix all Op names with tower_name
 # to differentiate the operations. Note that this prefix is removed from the
@@ -149,11 +149,11 @@ def _activation_summary(x):
   # Remove 'tower_[0-9]/' from the name in case this is a multi-GPU training
   # session. This helps the clarity of presentation on tensorboard.
   tensor_name = re.sub('%s_[0-9]*/' % TOWER_NAME, '', x.op.name)
-  tf.summary.histogram(tensor_name + '/activations', x)
-  tf.summary.scalar(tensor_name + '/sparsity', tf.nn.zero_fraction(x))
+  tf.compat.v1.summary.histogram(tensor_name + '/activations', x)
+  tf.compat.v1.summary.scalar(tensor_name + '/sparsity', tf.nn.zero_fraction(x))
 
 
 def _activation_summaries(endpoints):
-  with tf.name_scope('summaries'):
+  with tf.compat.v1.name_scope('summaries'):
     for act in endpoints.values():
       _activation_summary(act)

@@ -32,25 +32,25 @@ from inception import inception_model as inception
 
 from inception.slim import slim
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('eval_dir', '/ifs/home/coudrn01/NN/TensorFlowTest/9a_test/results',
+tf.compat.v1.app.flags.DEFINE_string('eval_dir', '/ifs/home/coudrn01/NN/TensorFlowTest/9a_test/results',
                            """Directory where to write event logs.""")
 
-tf.app.flags.DEFINE_string('checkpoint_dir', '/ifs/home/coudrn01/NN/TensorFlowTest/9a_mutations/results/9a_scratch/',
+tf.compat.v1.app.flags.DEFINE_string('checkpoint_dir', '/ifs/home/coudrn01/NN/TensorFlowTest/9a_mutations/results/9a_scratch/',
                            """Directory where to read model checkpoints.""")
 
-tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 60 * 3,
+tf.compat.v1.app.flags.DEFINE_integer('eval_interval_secs', 60 * 60 * 3,
                             """How often to run the eval.""")
 
-tf.app.flags.DEFINE_boolean('run_once', False,
+tf.compat.v1.app.flags.DEFINE_boolean('run_once', False,
                             """Whether to run eval only once.""")
 
-tf.app.flags.DEFINE_integer('num_examples', 40000,
+tf.compat.v1.app.flags.DEFINE_integer('num_examples', 40000,
                             """Number of examples to run. Note that the eval """
                             """ImageNet dataset contains 50000 examples.""")
 
-tf.app.flags.DEFINE_string('subset', 'valid',
+tf.compat.v1.app.flags.DEFINE_string('subset', 'valid',
                            """Either 'valid' or 'train'.""")
 
 
@@ -132,8 +132,8 @@ def _eval_once(saver, summary_writer, summary_op, max_percent_op, all_filenames,
     summary_writer: Summary writer.
     summary_op: Summary op.
   """
-  tf.initialize_all_variables()
-  with tf.Session() as sess:
+  tf.compat.v1.initialize_all_variables()
+  with tf.compat.v1.Session() as sess:
     ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
     if ckpt and ckpt.model_checkpoint_path:
       if os.path.isabs(ckpt.model_checkpoint_path):
@@ -158,7 +158,7 @@ def _eval_once(saver, summary_writer, summary_op, max_percent_op, all_filenames,
     coord = tf.train.Coordinator()
     try:
       threads = []
-      for qr in tf.get_collection(tf.GraphKeys.QUEUE_RUNNERS):
+      for qr in tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.QUEUE_RUNNERS):
         threads.extend(qr.create_threads(sess, coord=coord, daemon=True,
                                          start=True))
       print("-num_examples: %d" % (FLAGS.num_examples))
@@ -356,13 +356,13 @@ def evaluate(dataset):
     variable_averages = tf.train.ExponentialMovingAverage(
         inception.MOVING_AVERAGE_DECAY)
     variables_to_restore = variable_averages.variables_to_restore()
-    saver = tf.train.Saver(variables_to_restore)
+    saver = tf.compat.v1.train.Saver(variables_to_restore)
 
     # Build the summary operation based on the TF collection of Summaries.
-    summary_op = tf.summary.merge_all()
+    summary_op = tf.compat.v1.summary.merge_all()
 
-    graph_def = tf.get_default_graph().as_graph_def()
-    summary_writer = tf.summary.FileWriter(FLAGS.eval_dir, graph_def=graph_def)
+    graph_def = tf.compat.v1.get_default_graph().as_graph_def()
+    summary_writer = tf.compat.v1.summary.FileWriter(FLAGS.eval_dir, graph_def=graph_def)
 
     # Label 0 is reserved for an (unused) background class.
     num_classes = dataset.num_classes() + 1

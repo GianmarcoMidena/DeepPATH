@@ -30,26 +30,26 @@ import threading
 import numpy as np
 import tensorflow as tf
 
-tf.app.flags.DEFINE_string('directory', '/path_to_jpg_sorted_by_class/',
+tf.compat.v1.app.flags.DEFINE_string('directory', '/path_to_jpg_sorted_by_class/',
                            'Training data directory')
-tf.app.flags.DEFINE_string('output_directory', '/path_to_output_directory/',
+tf.compat.v1.app.flags.DEFINE_string('output_directory', '/path_to_output_directory/',
                            'Output data directory')
 
-tf.app.flags.DEFINE_integer('train_shards', 1024,
+tf.compat.v1.app.flags.DEFINE_integer('train_shards', 1024,
                             'Number of shards in training TFRecord files.')
-tf.app.flags.DEFINE_integer('validation_shards', 128,
+tf.compat.v1.app.flags.DEFINE_integer('validation_shards', 128,
                             'Number of shards in validation TFRecord files.')
 
-tf.app.flags.DEFINE_integer('num_threads', 8,
+tf.compat.v1.app.flags.DEFINE_integer('num_threads', 8,
                             'Number of threads to preprocess the images.')
 
-tf.app.flags.DEFINE_integer('PatientID', -1,
+tf.compat.v1.app.flags.DEFINE_integer('PatientID', -1,
                             'Aggregate TFRecord using first digit of basenane as set by PatientID.')
 
-tf.app.flags.DEFINE_boolean('one_FT_per_Tile', False,
+tf.compat.v1.app.flags.DEFINE_boolean('one_FT_per_Tile', False,
                             '1 TFrecord per tile if True, otherwise, 1 per slide.')
 
-tf.app.flags.DEFINE_string('ImageSet_basename', 'test',
+tf.compat.v1.app.flags.DEFINE_string('ImageSet_basename', 'test',
                             'test, train or valid')
 
 # The labels file contains a list of valid labels are held in this file.
@@ -62,7 +62,7 @@ tf.app.flags.DEFINE_string('ImageSet_basename', 'test',
 # tf.app.flags.DEFINE_string('labels_file', '', 'Labels file')
 
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
 
 def _int64_feature(value):
@@ -113,15 +113,15 @@ class ImageCoder(object):
 
   def __init__(self):
     # Create a single Session to run all image coding calls.
-    self._sess = tf.Session()
+    self._sess = tf.compat.v1.Session()
 
     # Initializes function that converts PNG to JPEG data.
-    self._png_data = tf.placeholder(dtype=tf.string)
+    self._png_data = tf.compat.v1.placeholder(dtype=tf.string)
     image = tf.image.decode_png(self._png_data, channels=3)
     self._png_to_jpeg = tf.image.encode_jpeg(image, format='rgb', quality=100)
 
     # Initializes function that decodes RGB JPEG data.
-    self._decode_jpeg_data = tf.placeholder(dtype=tf.string)
+    self._decode_jpeg_data = tf.compat.v1.placeholder(dtype=tf.string)
     self._decode_jpeg = tf.image.decode_jpeg(self._decode_jpeg_data, channels=3)
 
   def png_to_jpeg(self, image_data):
@@ -160,7 +160,7 @@ def _process_image(filename, coder):
     width: integer, image width in pixels.
   """
   # Read the image file.
-  with tf.gfile.FastGFile(filename, 'rb') as f:
+  with tf.compat.v1.gfile.FastGFile(filename, 'rb') as f:
     image_data = f.read()
   #image_data = tf.gfile.FastGFile(filename, 'r').read()
 
@@ -236,7 +236,7 @@ def _process_image_files_batch_test(coder, thread_index, ranges, name, filenames
       counter += 1
       output_filename = '%s_%s.TFRecord' % (rootname, label)
       output_file = os.path.join(FLAGS.output_directory, output_filename)
-      writer = tf.python_io.TFRecordWriter(output_file)
+      writer = tf.io.TFRecordWriter(output_file)
 
     example = _convert_to_example(filename, image_buffer, label,
                                   text, height, width)
@@ -287,7 +287,7 @@ def _process_image_files_batch(coder, thread_index, ranges, name, filenames,
     shard = thread_index * num_shards_per_batch + s
     output_filename = '%s-%.5d-of-%.5d' % (name, shard, num_shards)
     output_file = os.path.join(FLAGS.output_directory, output_filename)
-    writer = tf.python_io.TFRecordWriter(output_file)
+    writer = tf.io.TFRecordWriter(output_file)
 
     shard_counter = 0
     files_in_shard = np.arange(shard_ranges[s], shard_ranges[s + 1], dtype=int)
@@ -425,12 +425,12 @@ def _find_image_files(name, data_dir):
 #    jpeg_file_path = '%s/%s/*' % (data_dir, text)
     typeIm = name + '*.jpeg'
     jpeg_file_path = os.path.join(data_dir, text, typeIm)
-    matching_files = tf.gfile.Glob(jpeg_file_path)
+    matching_files = tf.io.gfile.glob(jpeg_file_path)
     #print(matching_files)
     if len(matching_files) < 1:
       typeIm = name + '*.jpg'
       jpeg_file_path = os.path.join(data_dir, text, typeIm)
-      matching_files = tf.gfile.Glob(jpeg_file_path)
+      matching_files = tf.io.gfile.glob(jpeg_file_path)
     matching_files.sort()
     labels.extend([label_index] * len(matching_files))
     texts.extend([text] * len(matching_files))
@@ -484,5 +484,5 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tf.compat.v1.app.run()
 

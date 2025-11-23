@@ -42,16 +42,16 @@ from __future__ import print_function
 
 import tensorflow as tf
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
-tf.app.flags.DEFINE_integer('batch_size', 32,
+tf.compat.v1.app.flags.DEFINE_integer('batch_size', 32,
                             """Number of images to process in a batch.""")
-tf.app.flags.DEFINE_integer('image_size', 299,
+tf.compat.v1.app.flags.DEFINE_integer('image_size', 299,
                             """Provide square images of this size.""")
-tf.app.flags.DEFINE_integer('num_preprocess_threads', 4,
+tf.compat.v1.app.flags.DEFINE_integer('num_preprocess_threads', 4,
                             """Number of preprocessing threads per tower. """
                             """Please make this a multiple of 4.""")
-tf.app.flags.DEFINE_integer('num_readers', 4,
+tf.compat.v1.app.flags.DEFINE_integer('num_readers', 4,
                             """Number of parallel readers during train.""")
 
 # Images are preprocessed asynchronously using multiple threads specified by
@@ -64,7 +64,7 @@ tf.app.flags.DEFINE_integer('num_readers', 4,
 # of 1024*16 images. Assuming RGB 299x299 images, this implies a queue size of
 # 16GB. If the machine is memory limited, then decrease this factor to
 # decrease the CPU memory footprint, accordingly.
-tf.app.flags.DEFINE_integer('input_queue_memory_factor', 16,
+tf.compat.v1.app.flags.DEFINE_integer('input_queue_memory_factor', 16,
                             """Size of the queue of preprocessed images. """
                             """Default is ideal but try smaller values, e.g. """
                             """4, 2 or 1, if host memory is constrained. See """
@@ -146,7 +146,7 @@ def decode_jpeg(image_buffer, scope=None):
   Returns:
     3-D float Tensor with values ranging from [0, 1).
   """
-  with tf.name_scope(values=[image_buffer], name=scope,
+  with tf.compat.v1.name_scope(values=[image_buffer], name=scope,
                      default_name='decode_jpeg'):
     # Decode the string as an RGB JPEG.
     # Note that the resulting image contains an unknown height and width
@@ -176,7 +176,7 @@ def distort_color(image, thread_id=0, scope=None):
   Returns:
     color-distorted image
   """
-  with tf.name_scope(values=[image], name=scope, default_name='distort_color'):
+  with tf.compat.v1.name_scope(values=[image], name=scope, default_name='distort_color'):
     color_ordering = thread_id % 2
 
     if color_ordering == 0:
@@ -214,7 +214,7 @@ def distort_image(image, height, width, bbox, thread_id=0, scope=None):
   Returns:
     3-D float Tensor of distorted image used for training.
   """
-  with tf.name_scope(values=[image, height, width, bbox], name=scope,
+  with tf.compat.v1.name_scope(values=[image, height, width, bbox], name=scope,
                      default_name='distort_image'):
     # Each bounding box has shape [1, num_boxes, box coords] and
     # the coordinates are ordered [ymin, xmin, ymax, xmax].
@@ -223,7 +223,7 @@ def distort_image(image, height, width, bbox, thread_id=0, scope=None):
     if not thread_id:
       image_with_box = tf.image.draw_bounding_boxes(tf.expand_dims(image, 0),
                                                     bbox)
-      tf.summary.image('image_with_bounding_boxes', image_with_box)
+      tf.compat.v1.summary.image('image_with_bounding_boxes', image_with_box)
 
   # A large fraction of image datasets contain a human-annotated bounding
   # box delineating the region of the image containing the object of interest.
@@ -233,7 +233,7 @@ def distort_image(image, height, width, bbox, thread_id=0, scope=None):
   # bounding box. If no box is supplied, then we assume the bounding box is
   # the entire image.
     sample_distorted_bounding_box = tf.image.sample_distorted_bounding_box(
-        tf.shape(image),
+        image_size=tf.shape(input=image),
         bounding_boxes=bbox,
         min_object_covered=0.1,
         aspect_ratio_range=[0.75, 1.33],
@@ -244,7 +244,7 @@ def distort_image(image, height, width, bbox, thread_id=0, scope=None):
     if not thread_id:
       image_with_distorted_box = tf.image.draw_bounding_boxes(
           tf.expand_dims(image, 0), distort_bbox)
-      tf.summary.image('images_with_distorted_bounding_box',
+      tf.compat.v1.summary.image('images_with_distorted_bounding_box',
                        image_with_distorted_box)
 
     # Crop the image to the specified bounding box.
@@ -255,13 +255,13 @@ def distort_image(image, height, width, bbox, thread_id=0, scope=None):
     # fashion based on the thread number.
     # Note that ResizeMethod contains 4 enumerated resizing methods.
     resize_method = thread_id % 4
-    distorted_image = tf.image.resize_images(distorted_image, [height, width],
+    distorted_image = tf.image.resize(distorted_image, [height, width],
                                              method=resize_method)
     # Restore the shape since the dynamic slice based upon the bbox_size loses
     # the third dimension.
     distorted_image.set_shape([height, width, 3])
     if not thread_id:
-      tf.summary.image('cropped_resized_image',
+      tf.compat.v1.summary.image('cropped_resized_image',
                        tf.expand_dims(distorted_image, 0))
 
     # Randomly flip the image horizontally.
@@ -271,7 +271,7 @@ def distort_image(image, height, width, bbox, thread_id=0, scope=None):
     distorted_image = distort_color(distorted_image, thread_id)
 
     if not thread_id:
-      tf.summary.image('final_distorted_image',
+      tf.compat.v1.summary.image('final_distorted_image',
                        tf.expand_dims(distorted_image, 0))
     return distorted_image
 
@@ -287,7 +287,7 @@ def eval_image(image, height, width, scope=None):
   Returns:
     3-D float Tensor of prepared image.
   """
-  with tf.name_scope(values=[image, height, width], name=scope,
+  with tf.compat.v1.name_scope(values=[image, height, width], name=scope,
                      default_name='eval_image'):
     # Crop the central region of the image with an area containing 87.5% of
     # the original image.
@@ -295,8 +295,8 @@ def eval_image(image, height, width, scope=None):
 
     # Resize the image to the original height and width.
     image = tf.expand_dims(image, 0)
-    image = tf.image.resize_bilinear(image, [height, width],
-                                     align_corners=False)
+    image = tf.image.resize(image, [height, width],
+                                     method=tf.image.ResizeMethod.BILINEAR)
     image = tf.squeeze(image, [0])
     return image
 
@@ -373,16 +373,16 @@ def parse_example_proto(example_serialized):
   """
   # Dense features in Example proto.
   feature_map = {
-      'image/encoded': tf.FixedLenFeature([], dtype=tf.string,
+      'image/encoded': tf.io.FixedLenFeature([], dtype=tf.string,
                                           default_value=''),
-      'image/class/label': tf.FixedLenFeature([FLAGS.nbr_of_classes+1], dtype=tf.int64,
+      'image/class/label': tf.io.FixedLenFeature([FLAGS.nbr_of_classes+1], dtype=tf.int64,
                                               default_value=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-      'image/class/text': tf.FixedLenFeature([], dtype=tf.string,
+      'image/class/text': tf.io.FixedLenFeature([], dtype=tf.string,
                                              default_value=''),
-      'image/filename': tf.FixedLenFeature([], dtype=tf.string,
+      'image/filename': tf.io.FixedLenFeature([], dtype=tf.string,
                                              default_value=''),
   }
-  sparse_float32 = tf.VarLenFeature(dtype=tf.float32)
+  sparse_float32 = tf.io.VarLenFeature(dtype=tf.float32)
   # Sparse features in Example proto.
   feature_map.update(
       {k: sparse_float32 for k in ['image/object/bbox/xmin',
@@ -390,7 +390,7 @@ def parse_example_proto(example_serialized):
                                    'image/object/bbox/xmax',
                                    'image/object/bbox/ymax']})
 
-  features = tf.parse_single_example(example_serialized, feature_map)
+  features = tf.io.parse_single_example(serialized=example_serialized, features=feature_map)
   label = tf.cast(features['image/class/label'], dtype=tf.int32)
 
   xmin = tf.expand_dims(features['image/object/bbox/xmin'].values, 0)
@@ -404,7 +404,7 @@ def parse_example_proto(example_serialized):
   # Force the variable number of bounding boxes into the shape
   # [1, num_boxes, coords].
   bbox = tf.expand_dims(bbox, 0)
-  bbox = tf.transpose(bbox, [0, 2, 1])
+  bbox = tf.transpose(a=bbox, perm=[0, 2, 1])
 
   return features['image/encoded'], label, bbox, features['image/class/text'], features['image/filename']
 
@@ -428,14 +428,14 @@ def batch_inputs(dataset, batch_size, train, num_preprocess_threads=None,
   Raises:
     ValueError: if data is not found
   """
-  with tf.name_scope('batch_processing'):
+  with tf.compat.v1.name_scope('batch_processing'):
     data_files = dataset.data_files()
     if data_files is None:
       raise ValueError('No data files found for this dataset')
 
     nbr_slides = 0
     for fn in data_files:
-      for record in tf.python_io.tf_record_iterator(fn):
+      for record in tf.compat.v1.python_io.tf_record_iterator(fn):
         nbr_slides += 1
 
     # Create filename_queue
@@ -450,7 +450,7 @@ def batch_inputs(dataset, batch_size, train, num_preprocess_threads=None,
     #                                                  shuffle=False,
     #                                                  capacity=1)
 
-    filename_queue = tf.train.string_input_producer(data_files, shuffle=False, capacity=1)
+    filename_queue = tf.compat.v1.train.string_input_producer(data_files, shuffle=False, capacity=1)
 
     if num_preprocess_threads is None:
       num_preprocess_threads = FLAGS.num_preprocess_threads
@@ -477,7 +477,7 @@ def batch_inputs(dataset, batch_size, train, num_preprocess_threads=None,
     #min_queue_examples = examples_per_shard * FLAGS.input_queue_memory_factor
     min_queue_examples = examples_per_shard * 1
     if train:
-      examples_queue = tf.RandomShuffleQueue(
+      examples_queue = tf.queue.RandomShuffleQueue(
           capacity=min_queue_examples + 3 * batch_size,
           min_after_dequeue=min_queue_examples,
           dtypes=[tf.string])
@@ -485,7 +485,7 @@ def batch_inputs(dataset, batch_size, train, num_preprocess_threads=None,
       #examples_queue = tf.FIFOQueue(
       #    capacity=examples_per_shard,
       #    dtypes=[tf.string])
-      examples_queue = tf.FIFOQueue(
+      examples_queue = tf.queue.FIFOQueue(
           capacity=examples_per_shard + 3 * batch_size,
           dtypes=[tf.string])
 
@@ -499,8 +499,8 @@ def batch_inputs(dataset, batch_size, train, num_preprocess_threads=None,
         _, value = reader.read(filename_queue)
         enqueue_ops.append(examples_queue.enqueue([value]))
 
-      tf.train.queue_runner.add_queue_runner(
-          tf.train.queue_runner.QueueRunner(examples_queue, enqueue_ops))
+      tf.compat.v1.train.queue_runner.add_queue_runner(
+          tf.compat.v1.train.queue_runner.QueueRunner(examples_queue, enqueue_ops))
       example_serialized = examples_queue.dequeue()
     else:
       reader = dataset.reader()
@@ -517,7 +517,7 @@ def batch_inputs(dataset, batch_size, train, num_preprocess_threads=None,
       images_and_labels.append([image, label_index, filename_extract])
       all_filenames.append(filename_extract)
 
-    images, label_index_batch, all_filenames2 = tf.train.batch_join(
+    images, label_index_batch, all_filenames2 = tf.compat.v1.train.batch_join(
         images_and_labels,
         batch_size=batch_size,
         capacity=2 * num_preprocess_threads * batch_size * (round(nbr_slides/batch_size)+1))
@@ -535,6 +535,6 @@ def batch_inputs(dataset, batch_size, train, num_preprocess_threads=None,
     #sall_filenames2 = tf.cast(all_filenames2, tf.string)
 
     # Display the training images in the visualizer.
-    tf.summary.image('images', images)
+    tf.compat.v1.summary.image('images', images)
 
     return images, tf.reshape(label_index_batch, [batch_size, FLAGS.nbr_of_classes+1]), all_filenames2, example_serialized

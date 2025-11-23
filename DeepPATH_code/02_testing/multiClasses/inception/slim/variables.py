@@ -107,8 +107,8 @@ def add_variable(var, restore=True):
   if restore:
     collections.append(VARIABLES_TO_RESTORE)
   for collection in collections:
-    if var not in tf.get_collection(collection):
-      tf.add_to_collection(collection, var)
+    if var not in tf.compat.v1.get_collection(collection):
+      tf.compat.v1.add_to_collection(collection, var)
 
 
 def get_variables(scope=None, suffix=None):
@@ -121,7 +121,7 @@ def get_variables(scope=None, suffix=None):
   Returns:
     a copied list of variables with scope and suffix.
   """
-  candidates = tf.get_collection(MODEL_VARIABLES, scope)[:]
+  candidates = tf.compat.v1.get_collection(MODEL_VARIABLES, scope)[:]
   if suffix is not None:
     candidates = [var for var in candidates if var.op.name.endswith(suffix)]
   return candidates
@@ -133,7 +133,7 @@ def get_variables_to_restore():
   Returns:
     a copied list of variables.
   """
-  return tf.get_collection(VARIABLES_TO_RESTORE)[:]
+  return tf.compat.v1.get_collection(VARIABLES_TO_RESTORE)[:]
 
 
 def get_variables_by_name(given_name, scope=None):
@@ -161,7 +161,7 @@ def get_unique_variable(name):
   Raises:
     ValueError: if no variable uniquely identified by the name exists.
   """
-  candidates = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, name)
+  candidates = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES, name)
   if not candidates:
     raise ValueError('Couldnt find variable %s' % name)
 
@@ -209,8 +209,8 @@ class VariableDeviceChooser(object):
 def variable_device(device, name):
   """Fix the variable device to colocate its ops."""
   if callable(device):
-    var_name = tf.get_variable_scope().name + '/' + name
-    var_def = tf.NodeDef(name=var_name, op='Variable')
+    var_name = tf.compat.v1.get_variable_scope().name + '/' + name
+    var_def = tf.compat.v1.NodeDef(name=var_name, op='Variable')
     device = device(var_def)
   if device is None:
     device = ''
@@ -228,19 +228,19 @@ def global_step(device=''):
   Returns:
     the tensor representing the global step variable.
   """
-  global_step_ref = tf.get_collection(tf.GraphKeys.GLOBAL_STEP)
+  global_step_ref = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.GLOBAL_STEP)
   if global_step_ref:
     return global_step_ref[0]
   else:
     collections = [
         VARIABLES_TO_RESTORE,
-        tf.GraphKeys.GLOBAL_VARIABLES,
-        tf.GraphKeys.GLOBAL_STEP,
+        tf.compat.v1.GraphKeys.GLOBAL_VARIABLES,
+        tf.compat.v1.GraphKeys.GLOBAL_STEP,
     ]
     # Get the device for the variable.
     with tf.device(variable_device(device, 'global_step')):
-      return tf.get_variable('global_step', shape=[], dtype=tf.int64,
-                             initializer=tf.zeros_initializer(),
+      return tf.compat.v1.get_variable('global_step', shape=[], dtype=tf.int64,
+                             initializer=tf.compat.v1.zeros_initializer(),
                              trainable=False, collections=collections)
 
 
@@ -276,7 +276,7 @@ def variable(name, shape=None, dtype=tf.float32, initializer=None,
   collections = list(collections or [])
 
   # Make sure variables are added to tf.GraphKeys.GLOBAL_VARIABLES and MODEL_VARIABLES
-  collections += [tf.GraphKeys.GLOBAL_VARIABLES, MODEL_VARIABLES]
+  collections += [tf.compat.v1.GraphKeys.GLOBAL_VARIABLES, MODEL_VARIABLES]
   # Add to VARIABLES_TO_RESTORE if necessary
   if restore:
     collections.append(VARIABLES_TO_RESTORE)
@@ -284,6 +284,6 @@ def variable(name, shape=None, dtype=tf.float32, initializer=None,
   collections = set(collections)
   # Get the device for the variable.
   with tf.device(variable_device(device, name)):
-    return tf.get_variable(name, shape=shape, dtype=dtype,
+    return tf.compat.v1.get_variable(name, shape=shape, dtype=dtype,
                            initializer=initializer, regularizer=regularizer,
                            trainable=trainable, collections=collections)

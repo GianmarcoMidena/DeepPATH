@@ -27,16 +27,16 @@ class VariablesTest(tf.test.TestCase):
 
   def testCreateVariable(self):
     with self.test_session():
-      with tf.variable_scope('A'):
+      with tf.compat.v1.variable_scope('A'):
         a = variables.variable('a', [5])
         self.assertEquals(a.op.name, 'A/a')
         self.assertListEqual(a.get_shape().as_list(), [5])
 
   def testGetVariables(self):
     with self.test_session():
-      with tf.variable_scope('A'):
+      with tf.compat.v1.variable_scope('A'):
         a = variables.variable('a', [5])
-      with tf.variable_scope('B'):
+      with tf.compat.v1.variable_scope('B'):
         b = variables.variable('a', [5])
       self.assertEquals([a, b], variables.get_variables())
       self.assertEquals([a], variables.get_variables('A'))
@@ -44,24 +44,24 @@ class VariablesTest(tf.test.TestCase):
 
   def testGetVariablesSuffix(self):
     with self.test_session():
-      with tf.variable_scope('A'):
+      with tf.compat.v1.variable_scope('A'):
         a = variables.variable('a', [5])
-      with tf.variable_scope('A'):
+      with tf.compat.v1.variable_scope('A'):
         b = variables.variable('b', [5])
       self.assertEquals([a], variables.get_variables(suffix='a'))
       self.assertEquals([b], variables.get_variables(suffix='b'))
 
   def testGetVariableWithSingleVar(self):
     with self.test_session():
-      with tf.variable_scope('parent'):
+      with tf.compat.v1.variable_scope('parent'):
         a = variables.variable('child', [5])
       self.assertEquals(a, variables.get_unique_variable('parent/child'))
 
   def testGetVariableWithDistractors(self):
     with self.test_session():
-      with tf.variable_scope('parent'):
+      with tf.compat.v1.variable_scope('parent'):
         a = variables.variable('child', [5])
-        with tf.variable_scope('child'):
+        with tf.compat.v1.variable_scope('child'):
           variables.variable('grandchild1', [7])
           variables.variable('grandchild2', [9])
       self.assertEquals(a, variables.get_unique_variable('parent/child'))
@@ -75,7 +75,7 @@ class VariablesTest(tf.test.TestCase):
   def testGetThrowsExceptionWithChildrenButNoMatch(self):
     var_name = 'parent/child'
     with self.test_session():
-      with tf.variable_scope(var_name):
+      with tf.compat.v1.variable_scope(var_name):
         variables.variable('grandchild1', [7])
         variables.variable('grandchild2', [9])
       with self.assertRaises(ValueError):
@@ -83,27 +83,27 @@ class VariablesTest(tf.test.TestCase):
 
   def testGetVariablesToRestore(self):
     with self.test_session():
-      with tf.variable_scope('A'):
+      with tf.compat.v1.variable_scope('A'):
         a = variables.variable('a', [5])
-      with tf.variable_scope('B'):
+      with tf.compat.v1.variable_scope('B'):
         b = variables.variable('a', [5])
       self.assertEquals([a, b], variables.get_variables_to_restore())
 
   def testNoneGetVariablesToRestore(self):
     with self.test_session():
-      with tf.variable_scope('A'):
+      with tf.compat.v1.variable_scope('A'):
         a = variables.variable('a', [5], restore=False)
-      with tf.variable_scope('B'):
+      with tf.compat.v1.variable_scope('B'):
         b = variables.variable('a', [5], restore=False)
       self.assertEquals([], variables.get_variables_to_restore())
       self.assertEquals([a, b], variables.get_variables())
 
   def testGetMixedVariablesToRestore(self):
     with self.test_session():
-      with tf.variable_scope('A'):
+      with tf.compat.v1.variable_scope('A'):
         a = variables.variable('a', [5])
         b = variables.variable('b', [5], restore=False)
-      with tf.variable_scope('B'):
+      with tf.compat.v1.variable_scope('B'):
         c = variables.variable('c', [5])
         d = variables.variable('d', [5], restore=False)
       self.assertEquals([a, b, c, d], variables.get_variables())
@@ -111,16 +111,16 @@ class VariablesTest(tf.test.TestCase):
 
   def testReuseVariable(self):
     with self.test_session():
-      with tf.variable_scope('A'):
+      with tf.compat.v1.variable_scope('A'):
         a = variables.variable('a', [])
-      with tf.variable_scope('A', reuse=True):
+      with tf.compat.v1.variable_scope('A', reuse=True):
         b = variables.variable('a', [])
       self.assertEquals(a, b)
       self.assertListEqual([a], variables.get_variables())
 
   def testVariableWithDevice(self):
     with self.test_session():
-      with tf.variable_scope('A'):
+      with tf.compat.v1.variable_scope('A'):
         a = variables.variable('a', [], device='cpu:0')
         b = variables.variable('b', [], device='cpu:1')
       self.assertDeviceEqual(a.device, 'cpu:0')
@@ -166,7 +166,7 @@ class VariablesTest(tf.test.TestCase):
 
   def testVariableWithReplicaDeviceSetter(self):
     with self.test_session():
-      with tf.device(tf.train.replica_device_setter(ps_tasks=2)):
+      with tf.device(tf.compat.v1.train.replica_device_setter(ps_tasks=2)):
         a = variables.variable('a', [])
         b = variables.variable('b', [])
         c = variables.variable('c', [], device='cpu:12')
@@ -241,22 +241,22 @@ class VariablesTest(tf.test.TestCase):
     with self.test_session():
       a = variables.variable('a', [], collections='A')
       b = variables.variable('b', [], collections='B')
-      self.assertEquals(a, tf.get_collection('A')[0])
-      self.assertEquals(b, tf.get_collection('B')[0])
+      self.assertEquals(a, tf.compat.v1.get_collection('A')[0])
+      self.assertEquals(b, tf.compat.v1.get_collection('B')[0])
 
   def testVariableCollections(self):
     with self.test_session():
       a = variables.variable('a', [], collections=['A', 'C'])
       b = variables.variable('b', [], collections=['B', 'C'])
-      self.assertEquals(a, tf.get_collection('A')[0])
-      self.assertEquals(b, tf.get_collection('B')[0])
+      self.assertEquals(a, tf.compat.v1.get_collection('A')[0])
+      self.assertEquals(b, tf.compat.v1.get_collection('B')[0])
 
   def testVariableCollectionsWithArgScope(self):
     with self.test_session():
       with scopes.arg_scope([variables.variable], collections='A'):
         a = variables.variable('a', [])
         b = variables.variable('b', [])
-      self.assertListEqual([a, b], tf.get_collection('A'))
+      self.assertListEqual([a, b], tf.compat.v1.get_collection('A'))
 
   def testVariableCollectionsWithArgScopeNested(self):
     with self.test_session():
@@ -264,8 +264,8 @@ class VariablesTest(tf.test.TestCase):
         a = variables.variable('a', [])
         with scopes.arg_scope([variables.variable], collections='B'):
           b = variables.variable('b', [])
-      self.assertEquals(a, tf.get_collection('A')[0])
-      self.assertEquals(b, tf.get_collection('B')[0])
+      self.assertEquals(a, tf.compat.v1.get_collection('A')[0])
+      self.assertEquals(b, tf.compat.v1.get_collection('B')[0])
 
   def testVariableCollectionsWithArgScopeNonNested(self):
     with self.test_session():
@@ -274,8 +274,8 @@ class VariablesTest(tf.test.TestCase):
       with scopes.arg_scope([variables.variable], collections='B'):
         b = variables.variable('b', [])
       variables.variable('c', [])
-      self.assertListEqual([a], tf.get_collection('A'))
-      self.assertListEqual([b], tf.get_collection('B'))
+      self.assertListEqual([a], tf.compat.v1.get_collection('A'))
+      self.assertListEqual([b], tf.compat.v1.get_collection('B'))
 
   def testVariableRestoreWithArgScopeNested(self):
     with self.test_session():
@@ -287,16 +287,16 @@ class VariablesTest(tf.test.TestCase):
           b = variables.variable('b', [])
         c = variables.variable('c', [])
       self.assertListEqual([a, b, c], variables.get_variables_to_restore())
-      self.assertListEqual([a, c], tf.trainable_variables())
-      self.assertListEqual([b], tf.get_collection('A'))
-      self.assertListEqual([b], tf.get_collection('B'))
+      self.assertListEqual([a, c], tf.compat.v1.trainable_variables())
+      self.assertListEqual([b], tf.compat.v1.get_collection('A'))
+      self.assertListEqual([b], tf.compat.v1.get_collection('B'))
 
 
 class GetVariablesByNameTest(tf.test.TestCase):
 
   def testGetVariableGivenNameScoped(self):
     with self.test_session():
-      with tf.variable_scope('A'):
+      with tf.compat.v1.variable_scope('A'):
         a = variables.variable('a', [5])
         b = variables.variable('b', [5])
         self.assertEquals([a], variables.get_variables_by_name('a'))
@@ -304,7 +304,7 @@ class GetVariablesByNameTest(tf.test.TestCase):
 
   def testGetVariablesByNameReturnsByValueWithScope(self):
     with self.test_session():
-      with tf.variable_scope('A'):
+      with tf.compat.v1.variable_scope('A'):
         a = variables.variable('a', [5])
         matched_variables = variables.get_variables_by_name('a')
 
@@ -363,7 +363,7 @@ class GlobalStepTest(tf.test.TestCase):
       self.assertDeviceEqual(gs2.device, '/cpu:0')
 
   def testReplicaDeviceSetter(self):
-    device_fn = tf.train.replica_device_setter(2)
+    device_fn = tf.compat.v1.train.replica_device_setter(2)
     with tf.Graph().as_default():
       with scopes.arg_scope([variables.global_step], device=device_fn):
         gs = variables.global_step()

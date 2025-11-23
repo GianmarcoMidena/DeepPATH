@@ -23,12 +23,12 @@ from __future__ import print_function
 from inception.dataset import Dataset
 import tensorflow as tf
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
-tf.app.flags.DEFINE_integer('ClassNumber', 5,
+tf.compat.v1.app.flags.DEFINE_integer('ClassNumber', 5,
                            """Number of classes.""")
 
-tf.app.flags.DEFINE_integer('NbrOfImages', 400000,
+tf.compat.v1.app.flags.DEFINE_integer('NbrOfImages', 400000,
                            """Number of images per epoch.""")
 
 class ImagenetData(Dataset):

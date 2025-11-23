@@ -33,23 +33,23 @@ from inception import image_processing
 from inception import inception_model as inception
 
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('eval_dir', '/tmp/imagenet_eval',
+tf.compat.v1.app.flags.DEFINE_string('eval_dir', '/tmp/imagenet_eval',
                            """Directory where to write event logs.""")
-tf.app.flags.DEFINE_string('checkpoint_dir', '/tmp/imagenet_train',
+tf.compat.v1.app.flags.DEFINE_string('checkpoint_dir', '/tmp/imagenet_train',
                            """Directory where to read model checkpoints.""")
 
 # Flags governing the frequency of the eval.
-tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 60 * 5,
+tf.compat.v1.app.flags.DEFINE_integer('eval_interval_secs', 60 * 60 * 5,
                             """How often to run the eval.""")
-tf.app.flags.DEFINE_boolean('run_once', False,
+tf.compat.v1.app.flags.DEFINE_boolean('run_once', False,
                             """Whether to run eval only once.""")
 
 # Flags governing the data used for the eval.
-tf.app.flags.DEFINE_integer('num_examples', 50000,
+tf.compat.v1.app.flags.DEFINE_integer('num_examples', 50000,
                             """Number of examples to run. """)
-tf.app.flags.DEFINE_string('subset', 'valid',
+tf.compat.v1.app.flags.DEFINE_string('subset', 'valid',
                            """Either 'valid' or 'train' or 'test'.""")
 
 
@@ -63,8 +63,8 @@ def _eval_once(saver, summary_writer, top_1_op, top_5_op, summary_op, max_percen
     top_5_op: Top 5 op.
     summary_op: Summary op.
   """
-  tf.initialize_all_variables()
-  with tf.Session() as sess:
+  tf.compat.v1.initialize_all_variables()
+  with tf.compat.v1.Session() as sess:
     ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
     if ckpt and ckpt.model_checkpoint_path:
       if os.path.isabs(ckpt.model_checkpoint_path):
@@ -89,7 +89,7 @@ def _eval_once(saver, summary_writer, top_1_op, top_5_op, summary_op, max_percen
     coord = tf.train.Coordinator()
     try:
       threads = []
-      for qr in tf.get_collection(tf.GraphKeys.QUEUE_RUNNERS):
+      for qr in tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.QUEUE_RUNNERS):
         threads.extend(qr.create_threads(sess, coord=coord, daemon=True,
                                          start=True))
       print("-num_examples: %d" % (FLAGS.num_examples))
@@ -329,7 +329,7 @@ def _tower_loss(images, labels, num_classes, scope, reuse_variables=None):
   restore_logits = not FLAGS.fine_tune
 
   # Build inference Graph.
-  with tf.variable_scope(tf.get_variable_scope(), reuse=reuse_variables):
+  with tf.compat.v1.variable_scope(tf.compat.v1.get_variable_scope(), reuse=reuse_variables):
     logits = inception.inference(images, num_classes, for_training=True,
                                  restore_logits=restore_logits,
                                  scope=scope)
@@ -340,10 +340,10 @@ def _tower_loss(images, labels, num_classes, scope, reuse_variables=None):
   inception.loss(logits, labels, batch_size=split_batch_size)
 
   # Assemble all of the losses for the current tower only.
-  losses = tf.get_collection(slim.losses.LOSSES_COLLECTION, scope)
+  losses = tf.compat.v1.get_collection(slim.losses.LOSSES_COLLECTION, scope)
 
   # Calculate the total loss for the current tower.
-  regularization_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+  regularization_losses = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
   total_loss = tf.add_n(losses + regularization_losses, name='total_loss')
 
   # Compute the moving average of all individual losses and the total loss.
@@ -358,8 +358,8 @@ def _tower_loss(images, labels, num_classes, scope, reuse_variables=None):
     loss_name = re.sub('%s_[0-9]*/' % inception.TOWER_NAME, '', l.op.name)
     # Name each loss as '(raw)' and name the moving average version of the loss
     # as the original loss name.
-    tf.summary.scalar(loss_name +' (raw)', l)
-    tf.summary.scalar(loss_name, loss_averages.average(l))
+    tf.compat.v1.summary.scalar(loss_name +' (raw)', l)
+    tf.compat.v1.summary.scalar(loss_name, loss_averages.average(l))
 
   with tf.control_dependencies([loss_averages_op]):
     total_loss = tf.identity(total_loss)
@@ -390,8 +390,8 @@ def evaluate(dataset):
     #   #max_percent.append(end_points['predictions'][kk][labels[kk]])
     #   max_percent.append(labels[kk])
     if FLAGS.mode == '0_softmax':
-      top_1_op = tf.nn.in_top_k(logits, labels, 1)
-      top_5_op = tf.nn.in_top_k(logits, labels, 5)
+      top_1_op = tf.nn.in_top_k(predictions=logits, targets=labels, k=1)
+      top_5_op = tf.nn.in_top_k(predictions=logits, targets=labels, k=5)
     elif FLAGS.mode == '1_sigmoid':
       top_1_op = None
       top_5_op = None
@@ -399,12 +399,12 @@ def evaluate(dataset):
     variable_averages = tf.train.ExponentialMovingAverage(
         inception.MOVING_AVERAGE_DECAY)
     variables_to_restore = variable_averages.variables_to_restore()
-    saver = tf.train.Saver(variables_to_restore)
+    saver = tf.compat.v1.train.Saver(variables_to_restore)
 
     # Build the summary operation based on the TF collection of Summaries.
-    summary_op = tf.summary.merge_all()
+    summary_op = tf.compat.v1.summary.merge_all()
 
-    graph_def = tf.get_default_graph().as_graph_def()
+    graph_def = tf.compat.v1.get_default_graph().as_graph_def()
     summary_writer = [] #tf.summary.FileWriter(FLAGS.eval_dir, graph_def=graph_def)
 
     while True:

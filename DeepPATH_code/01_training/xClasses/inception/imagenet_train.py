@@ -25,17 +25,17 @@ import tensorflow as tf
 from inception import inception_train
 from inception.imagenet_data import ImagenetData
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
 
 def main(_):
   dataset = ImagenetData(subset=FLAGS.subset)
   assert dataset.data_files()
-  if tf.gfile.Exists(FLAGS.train_dir):
-    tf.gfile.DeleteRecursively(FLAGS.train_dir)
-  tf.gfile.MakeDirs(FLAGS.train_dir)
+  if tf.io.gfile.exists(FLAGS.train_dir):
+    tf.io.gfile.rmtree(FLAGS.train_dir)
+  tf.io.gfile.makedirs(FLAGS.train_dir)
   inception_train.train(dataset)
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tf.compat.v1.app.run()

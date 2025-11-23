@@ -31,32 +31,32 @@ import json
 import numpy as np
 import tensorflow as tf
 
-tf.app.flags.DEFINE_string('directory', '/ifs/home/coudrn01/NN/Lung/Test_All512pxTiled/tmp_4_2Types/',
+tf.compat.v1.app.flags.DEFINE_string('directory', '/ifs/home/coudrn01/NN/Lung/Test_All512pxTiled/tmp_4_2Types/',
                            'Training data directory')
-tf.app.flags.DEFINE_string('output_directory', '/ifs/home/coudrn01/NN/Lung/Test_All512pxTiled/tmp_4_2Types/',
+tf.compat.v1.app.flags.DEFINE_string('output_directory', '/ifs/home/coudrn01/NN/Lung/Test_All512pxTiled/tmp_4_2Types/',
                            'Output data directory')
 
-tf.app.flags.DEFINE_string('labels_names', '/ifs/home/coudrn01/NN/Lung/Test_All512pxTiled/9_10mutations/label_names.txt',
+tf.compat.v1.app.flags.DEFINE_string('labels_names', '/ifs/home/coudrn01/NN/Lung/Test_All512pxTiled/9_10mutations/label_names.txt',
                            'Names of the possible output labels ordered as desired')
 
-tf.app.flags.DEFINE_string('labels', '/ifs/home/coudrn01/NN/Lung/Test_All512pxTiled/9_10mutations/label_names.txt',
+tf.compat.v1.app.flags.DEFINE_string('labels', '/ifs/home/coudrn01/NN/Lung/Test_All512pxTiled/9_10mutations/label_names.txt',
                            'File with two column: first is the patient ID, second is the mutation name (same name as in "labels_names" file. An ID can appear several times)')
 
-tf.app.flags.DEFINE_integer('train_shards', 1024,
+tf.compat.v1.app.flags.DEFINE_integer('train_shards', 1024,
                             'Number of shards in training TFRecord files.')
-tf.app.flags.DEFINE_integer('validation_shards', 128,
+tf.compat.v1.app.flags.DEFINE_integer('validation_shards', 128,
                             'Number of shards in validation TFRecord files.')
 
-tf.app.flags.DEFINE_integer('num_threads', 8,
+tf.compat.v1.app.flags.DEFINE_integer('num_threads', 8,
                             'Number of threads to preprocess the images.')
 
-tf.app.flags.DEFINE_boolean('one_FT_per_Tile', False,
+tf.compat.v1.app.flags.DEFINE_boolean('one_FT_per_Tile', False,
                             '1 TFrecord per tile if True, otherwise, 1 per slide.')
 
-tf.app.flags.DEFINE_string('ImageSet_basename', 'test',
+tf.compat.v1.app.flags.DEFINE_string('ImageSet_basename', 'test',
                             'test, train or valid')
 
-tf.app.flags.DEFINE_integer('PatientID', 12,
+tf.compat.v1.app.flags.DEFINE_integer('PatientID', 12,
                             'Number of digits used for the Patient ID (file names must start with patient ID. after sorting, will be located after test_ or valid_ or train_)')
 
 
@@ -70,7 +70,7 @@ tf.app.flags.DEFINE_integer('PatientID', 12,
 # tf.app.flags.DEFINE_string('labels_file', '', 'Labels file')
 
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
 
 def _int64_feature(value):
@@ -121,15 +121,15 @@ class ImageCoder(object):
 
   def __init__(self):
     # Create a single Session to run all image coding calls.
-    self._sess = tf.Session()
+    self._sess = tf.compat.v1.Session()
 
     # Initializes function that converts PNG to JPEG data.
-    self._png_data = tf.placeholder(dtype=tf.string)
+    self._png_data = tf.compat.v1.placeholder(dtype=tf.string)
     image = tf.image.decode_png(self._png_data, channels=3)
     self._png_to_jpeg = tf.image.encode_jpeg(image, format='rgb', quality=100)
 
     # Initializes function that decodes RGB JPEG data.
-    self._decode_jpeg_data = tf.placeholder(dtype=tf.string)
+    self._decode_jpeg_data = tf.compat.v1.placeholder(dtype=tf.string)
     self._decode_jpeg = tf.image.decode_jpeg(self._decode_jpeg_data, channels=3)
 
   def png_to_jpeg(self, image_data):
@@ -168,7 +168,7 @@ def _process_image(filename, coder):
     width: integer, image width in pixels.
   """
   # Read the image file.
-  with tf.gfile.FastGFile(filename, 'rb') as f:
+  with tf.compat.v1.gfile.FastGFile(filename, 'rb') as f:
     image_data = f.read()
   #image_data = tf.gfile.FastGFile(filename, 'r').read()
 
@@ -240,7 +240,7 @@ def _process_image_files_batch_test(coder, thread_index, ranges, name, filenames
       counter += 1
       output_filename = '%s_%s.TFRecord' % (rootname, ''.join(str(e) for e in label))
       output_file = os.path.join(FLAGS.output_directory, output_filename)
-      writer = tf.python_io.TFRecordWriter(output_file)
+      writer = tf.io.TFRecordWriter(output_file)
 
     example = _convert_to_example(filename, image_buffer, label,
                                   text, height, width)
@@ -388,7 +388,7 @@ def _find_image_files(name, data_dir):
   # Construct the list of JPEG files and labels (file-dir).
   typeIm = name + '*.jpeg'
   jpeg_file_path = os.path.join(data_dir, typeIm)
-  matching_files = tf.gfile.Glob(jpeg_file_path)
+  matching_files = tf.io.gfile.glob(jpeg_file_path)
   matching_files.sort()
   #print("matching_files:")
   #print(matching_files)
@@ -481,5 +481,5 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tf.compat.v1.app.run()
 

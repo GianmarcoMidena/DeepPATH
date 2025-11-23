@@ -31,33 +31,33 @@ from inception import image_processing
 from inception import inception_model as inception
 from inception.slim import slim
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
 #tf.app.flags.DEFINE_string('train_dir', '/tmp/imagenet_train',
-tf.app.flags.DEFINE_string('train_dir', '/ifs/home/coudrn01/NN/TensorFlowTest/8a_3Classes/inception//results/8a_scratch',
+tf.compat.v1.app.flags.DEFINE_string('train_dir', '/ifs/home/coudrn01/NN/TensorFlowTest/8a_3Classes/inception//results/8a_scratch',
                            """Directory where to write event logs """
                            """and checkpoint.""")
-tf.app.flags.DEFINE_integer('max_steps', 500000,
+tf.compat.v1.app.flags.DEFINE_integer('max_steps', 500000,
                             """Number of batches to run.""")
-tf.app.flags.DEFINE_string('subset', 'train',
+tf.compat.v1.app.flags.DEFINE_string('subset', 'train',
                            """Either 'train' or 'validation'.""")
 
 # Flags governing the hardware employed for running TensorFlow.
-tf.app.flags.DEFINE_integer('num_gpus', 1,
+tf.compat.v1.app.flags.DEFINE_integer('num_gpus', 1,
                             """How many GPUs to use.""")
-tf.app.flags.DEFINE_boolean('log_device_placement', False,
+tf.compat.v1.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
 
 # Flags governing the type of training.
-tf.app.flags.DEFINE_boolean('fine_tune', False,
+tf.compat.v1.app.flags.DEFINE_boolean('fine_tune', False,
                             """If set, randomly initialize the final layer """
                             """of weights in order to train the network on a """
                             """new task.""")
-tf.app.flags.DEFINE_string('pretrained_model_checkpoint_path', '',
+tf.compat.v1.app.flags.DEFINE_string('pretrained_model_checkpoint_path', '',
                            """If specified, restore this pretrained model """
                            """before beginning any training.""")
 
-tf.app.flags.DEFINE_integer('save_step_for_chekcpoint', 5000,
+tf.compat.v1.app.flags.DEFINE_integer('save_step_for_chekcpoint', 5000,
                            """Save checkpoints every n steps """)
 
 
@@ -71,11 +71,11 @@ tf.app.flags.DEFINE_integer('save_step_for_chekcpoint', 5000,
 # With 8 Tesla K40's and a batch size = 256, the following setup achieves
 # precision@1 = 73.5% after 100 hours and 100K steps (20 epochs).
 # Learning rate decay factor selected from http://arxiv.org/abs/1404.5997.
-tf.app.flags.DEFINE_float('initial_learning_rate', 0.1,
+tf.compat.v1.app.flags.DEFINE_float('initial_learning_rate', 0.1,
                           """Initial learning rate.""")
-tf.app.flags.DEFINE_float('num_epochs_per_decay', 30.0,
+tf.compat.v1.app.flags.DEFINE_float('num_epochs_per_decay', 30.0,
                           """Epochs after which learning rate decays.""")
-tf.app.flags.DEFINE_float('learning_rate_decay_factor', 0.16,
+tf.compat.v1.app.flags.DEFINE_float('learning_rate_decay_factor', 0.16,
                           """Learning rate decay factor.""")
 
 # Constants dictating the learning rate schedule.
@@ -108,7 +108,7 @@ def _tower_loss(images, labels, num_classes, scope, reuse_variables=None):
   restore_logits = not FLAGS.fine_tune
 
   # Build inference Graph.
-  with tf.variable_scope(tf.get_variable_scope(), reuse=reuse_variables):
+  with tf.compat.v1.variable_scope(tf.compat.v1.get_variable_scope(), reuse=reuse_variables):
     logits = inception.inference(images, num_classes, for_training=True,
                                  restore_logits=restore_logits,
                                  scope=scope)
@@ -119,10 +119,10 @@ def _tower_loss(images, labels, num_classes, scope, reuse_variables=None):
   inception.loss(logits, labels, batch_size=split_batch_size)
 
   # Assemble all of the losses for the current tower only.
-  losses = tf.get_collection(slim.losses.LOSSES_COLLECTION, scope)
+  losses = tf.compat.v1.get_collection(slim.losses.LOSSES_COLLECTION, scope)
 
   # Calculate the total loss for the current tower.
-  regularization_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+  regularization_losses = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
   total_loss = tf.add_n(losses + regularization_losses, name='total_loss')
 
   # Compute the moving average of all individual losses and the total loss.
@@ -137,8 +137,8 @@ def _tower_loss(images, labels, num_classes, scope, reuse_variables=None):
     loss_name = re.sub('%s_[0-9]*/' % inception.TOWER_NAME, '', l.op.name)
     # Name each loss as '(raw)' and name the moving average version of the loss
     # as the original loss name.
-    tf.summary.scalar(loss_name +' (raw)', l)
-    tf.summary.scalar(loss_name, loss_averages.average(l))
+    tf.compat.v1.summary.scalar(loss_name +' (raw)', l)
+    tf.compat.v1.summary.scalar(loss_name, loss_averages.average(l))
 
   with tf.control_dependencies([loss_averages_op]):
     total_loss = tf.identity(total_loss)
@@ -172,7 +172,7 @@ def _average_gradients(tower_grads):
 
     # Average over the 'tower' dimension.
     grad = tf.concat(axis=0, values=grads)
-    grad = tf.reduce_mean(grad, 0)
+    grad = tf.reduce_mean(input_tensor=grad, axis=0)
 
     # Keep in mind that the Variables are redundant because they are shared
     # across towers. So .. we will just return the first tower's pointer to
@@ -188,9 +188,9 @@ def train(dataset):
   with tf.Graph().as_default(), tf.device('/cpu:0'):
     # Create a variable to count the number of train() calls. This equals the
     # number of batches processed * FLAGS.num_gpus.
-    global_step = tf.get_variable(
+    global_step = tf.compat.v1.get_variable(
         'global_step', [],
-        initializer=tf.constant_initializer(0), trainable=False)
+        initializer=tf.compat.v1.constant_initializer(0), trainable=False)
 
     # Calculate the learning rate schedule.
     num_batches_per_epoch = (dataset.num_examples_per_epoch() /
@@ -198,14 +198,14 @@ def train(dataset):
     decay_steps = int(num_batches_per_epoch * FLAGS.num_epochs_per_decay)
 
     # Decay the learning rate exponentially based on the number of steps.
-    lr = tf.train.exponential_decay(FLAGS.initial_learning_rate,
+    lr = tf.compat.v1.train.exponential_decay(FLAGS.initial_learning_rate,
                                     global_step,
                                     decay_steps,
                                     FLAGS.learning_rate_decay_factor,
                                     staircase=True)
 
     # Create an optimizer that performs gradient descent.
-    opt = tf.train.RMSPropOptimizer(lr, RMSPROP_DECAY,
+    opt = tf.compat.v1.train.RMSPropOptimizer(lr, RMSPROP_DECAY,
                                     momentum=RMSPROP_MOMENTUM,
                                     epsilon=RMSPROP_EPSILON)
 
@@ -221,7 +221,7 @@ def train(dataset):
         dataset,
         num_preprocess_threads=num_preprocess_threads)
 
-    input_summaries = copy.copy(tf.get_collection(tf.GraphKeys.SUMMARIES))
+    input_summaries = copy.copy(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.SUMMARIES))
 
     # Number of classes in the Dataset label set plus 1.
     # Label 0 is reserved for an (unused) background class.
@@ -236,7 +236,7 @@ def train(dataset):
     reuse_variables = None
     for i in range(FLAGS.num_gpus):
       with tf.device('/gpu:%d' % i):
-        with tf.name_scope('%s_%d' % (inception.TOWER_NAME, i)) as scope:
+        with tf.compat.v1.name_scope('%s_%d' % (inception.TOWER_NAME, i)) as scope:
           # Force all Variables to reside on the CPU.
           with slim.arg_scope([slim.variables.variable], device='/cpu:0'):
             # Calculate the loss for one tower of the ImageNet model. This
@@ -249,13 +249,13 @@ def train(dataset):
           reuse_variables = True
 
           # Retain the summaries from the final tower.
-          summaries = tf.get_collection(tf.GraphKeys.SUMMARIES, scope)
+          summaries = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.SUMMARIES, scope)
 
           # Retain the Batch Normalization updates operations only from the
           # final tower. Ideally, we should grab the updates from all towers
           # but these stats accumulate extremely fast so we can ignore the
           # other stats from the other towers without significant detriment.
-          batchnorm_updates = tf.get_collection(slim.ops.UPDATE_OPS_COLLECTION,
+          batchnorm_updates = tf.compat.v1.get_collection(slim.ops.UPDATE_OPS_COLLECTION,
                                                 scope)
 
           # Calculate the gradients for the batch of data on this ImageNet
@@ -273,20 +273,20 @@ def train(dataset):
     summaries.extend(input_summaries)
 
     # Add a summary to track the learning rate.
-    summaries.append(tf.summary.scalar('learning_rate', lr))
+    summaries.append(tf.compat.v1.summary.scalar('learning_rate', lr))
 
     # Add histograms for gradients.
     for grad, var in grads:
       if grad is not None:
         summaries.append(
-            tf.summary.histogram(var.op.name + '/gradients', grad))
+            tf.compat.v1.summary.histogram(var.op.name + '/gradients', grad))
 
     # Apply the gradients to adjust the shared variables.
     apply_gradient_op = opt.apply_gradients(grads, global_step=global_step)
 
     # Add histograms for trainable variables.
-    for var in tf.trainable_variables():
-      summaries.append(tf.summary.histogram(var.op.name, var))
+    for var in tf.compat.v1.trainable_variables():
+      summaries.append(tf.compat.v1.summary.histogram(var.op.name, var))
 
     # Track the moving averages of all trainable variables.
     # Note that we maintain a "double-average" of the BatchNormalization
@@ -296,8 +296,8 @@ def train(dataset):
         inception.MOVING_AVERAGE_DECAY, global_step)
 
     # Another possibility is to use tf.slim.get_variables().
-    variables_to_average = (tf.trainable_variables() +
-                            tf.moving_average_variables())
+    variables_to_average = (tf.compat.v1.trainable_variables() +
+                            tf.compat.v1.moving_average_variables())
     variables_averages_op = variable_averages.apply(variables_to_average)
 
     # Group all updates to into a single train op.
@@ -307,42 +307,42 @@ def train(dataset):
 
     # Create a saver.
     # saver = tf.train.Saver(tf.global_variables())
-    saver = tf.train.Saver(tf.global_variables(), max_to_keep=100)
+    saver = tf.compat.v1.train.Saver(tf.compat.v1.global_variables(), max_to_keep=100)
 
     # Build the summary operation from the last tower summaries.
-    summary_op = tf.summary.merge(summaries)
+    summary_op = tf.compat.v1.summary.merge(summaries)
 
     # Build an initialization operation to run below.
-    init = tf.global_variables_initializer()
+    init = tf.compat.v1.global_variables_initializer()
 
     # Start running operations on the Graph. allow_soft_placement must be set to
     # True to build towers on GPU, as some of the ops do not have GPU
     # implementations.
-    sess = tf.Session(config=tf.ConfigProto(
+    sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(
         allow_soft_placement=True,
         log_device_placement=FLAGS.log_device_placement))
     sess.run(init)
 
     if FLAGS.pretrained_model_checkpoint_path:
       try:
-        assert tf.gfile.Exists(FLAGS.pretrained_model_checkpoint_path)
-        variables_to_restore = tf.get_collection(
+        assert tf.io.gfile.exists(FLAGS.pretrained_model_checkpoint_path)
+        variables_to_restore = tf.compat.v1.get_collection(
             slim.variables.VARIABLES_TO_RESTORE)
-        restorer = tf.train.Saver(variables_to_restore)
+        restorer = tf.compat.v1.train.Saver(variables_to_restore)
         restorer.restore(sess, FLAGS.pretrained_model_checkpoint_path)
         print('%s: Pre-trained model restored from %s' %
               (datetime.now(), FLAGS.pretrained_model_checkpoint_path))
       except:
         #restorer = tf.train.import_meta_graph(FLAGS.pretrained_model_checkpoint_path + '.meta')
-        variables_to_restore = tf.get_collection(
+        variables_to_restore = tf.compat.v1.get_collection(
             slim.variables.VARIABLES_TO_RESTORE)
-        restorer = tf.train.Saver(variables_to_restore)
+        restorer = tf.compat.v1.train.Saver(variables_to_restore)
         restorer.restore(sess, FLAGS.pretrained_model_checkpoint_path)
 
     # Start the queue runners.
-    tf.train.start_queue_runners(sess=sess)
+    tf.compat.v1.train.start_queue_runners(sess=sess)
 
-    summary_writer = tf.summary.FileWriter(
+    summary_writer = tf.compat.v1.summary.FileWriter(
         FLAGS.train_dir,
         graph=sess.graph)
 

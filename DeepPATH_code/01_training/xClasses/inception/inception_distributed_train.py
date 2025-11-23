@@ -31,39 +31,39 @@ from inception import image_processing
 from inception import inception_model as inception
 from inception.slim import slim
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('job_name', '', 'One of "ps", "worker"')
-tf.app.flags.DEFINE_string('ps_hosts', '',
+tf.compat.v1.app.flags.DEFINE_string('job_name', '', 'One of "ps", "worker"')
+tf.compat.v1.app.flags.DEFINE_string('ps_hosts', '',
                            """Comma-separated list of hostname:port for the """
                            """parameter server jobs. e.g. """
                            """'machine1:2222,machine2:1111,machine2:2222'""")
-tf.app.flags.DEFINE_string('worker_hosts', '',
+tf.compat.v1.app.flags.DEFINE_string('worker_hosts', '',
                            """Comma-separated list of hostname:port for the """
                            """worker jobs. e.g. """
                            """'machine1:2222,machine2:1111,machine2:2222'""")
 
-tf.app.flags.DEFINE_string('train_dir', '/tmp/imagenet_train',
+tf.compat.v1.app.flags.DEFINE_string('train_dir', '/tmp/imagenet_train',
                            """Directory where to write event logs """
                            """and checkpoint.""")
-tf.app.flags.DEFINE_integer('max_steps', 1000000, 'Number of batches to run.')
-tf.app.flags.DEFINE_string('subset', 'train', 'Either "train" or "validation".')
-tf.app.flags.DEFINE_boolean('log_device_placement', False,
+tf.compat.v1.app.flags.DEFINE_integer('max_steps', 1000000, 'Number of batches to run.')
+tf.compat.v1.app.flags.DEFINE_string('subset', 'train', 'Either "train" or "validation".')
+tf.compat.v1.app.flags.DEFINE_boolean('log_device_placement', False,
                             'Whether to log device placement.')
 
 # Task ID is used to select the chief and also to access the local_step for
 # each replica to check staleness of the gradients in SyncReplicasOptimizer.
-tf.app.flags.DEFINE_integer(
+tf.compat.v1.app.flags.DEFINE_integer(
     'task_id', 0, 'Task ID of the worker/replica running the training.')
 
 # More details can be found in the SyncReplicasOptimizer class:
 # tensorflow/python/training/sync_replicas_optimizer.py
-tf.app.flags.DEFINE_integer('num_replicas_to_aggregate', -1,
+tf.compat.v1.app.flags.DEFINE_integer('num_replicas_to_aggregate', -1,
                             """Number of gradients to collect before """
                             """updating the parameters.""")
-tf.app.flags.DEFINE_integer('save_interval_secs', 10 * 60,
+tf.compat.v1.app.flags.DEFINE_integer('save_interval_secs', 10 * 60,
                             'Save interval seconds.')
-tf.app.flags.DEFINE_integer('save_summaries_secs', 180,
+tf.compat.v1.app.flags.DEFINE_integer('save_summaries_secs', 180,
                             'Save summaries interval seconds.')
 
 # **IMPORTANT**
@@ -74,11 +74,11 @@ tf.app.flags.DEFINE_integer('save_summaries_secs', 180,
 # more guidance and discussion.
 #
 # Learning rate decay factor selected from https://arxiv.org/abs/1604.00981
-tf.app.flags.DEFINE_float('initial_learning_rate', 0.045,
+tf.compat.v1.app.flags.DEFINE_float('initial_learning_rate', 0.045,
                           'Initial learning rate.')
-tf.app.flags.DEFINE_float('num_epochs_per_decay', 2.0,
+tf.compat.v1.app.flags.DEFINE_float('num_epochs_per_decay', 2.0,
                           'Epochs after which learning rate decays.')
-tf.app.flags.DEFINE_float('learning_rate_decay_factor', 0.94,
+tf.compat.v1.app.flags.DEFINE_float('learning_rate_decay_factor', 0.94,
                           'Learning rate decay factor.')
 
 # Constants dictating the learning rate schedule.
@@ -127,16 +127,16 @@ def train(target, dataset, cluster_spec):
                         num_replicas_to_aggregate)
 
       # Decay the learning rate exponentially based on the number of steps.
-      lr = tf.train.exponential_decay(FLAGS.initial_learning_rate,
+      lr = tf.compat.v1.train.exponential_decay(FLAGS.initial_learning_rate,
                                       global_step,
                                       decay_steps,
                                       FLAGS.learning_rate_decay_factor,
                                       staircase=True)
       # Add a summary to track the learning rate.
-      tf.summary.scalar('learning_rate', lr)
+      tf.compat.v1.summary.scalar('learning_rate', lr)
 
       # Create an optimizer that performs gradient descent.
-      opt = tf.train.RMSPropOptimizer(lr,
+      opt = tf.compat.v1.train.RMSPropOptimizer(lr,
                                       RMSPROP_DECAY,
                                       momentum=RMSPROP_MOMENTUM,
                                       epsilon=RMSPROP_EPSILON)
@@ -154,8 +154,8 @@ def train(target, dataset, cluster_spec):
       inception.loss(logits, labels)
 
       # Gather all of the losses including regularization losses.
-      losses = tf.get_collection(slim.losses.LOSSES_COLLECTION)
-      losses += tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+      losses = tf.compat.v1.get_collection(slim.losses.LOSSES_COLLECTION)
+      losses += tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
 
       total_loss = tf.add_n(losses, name='total_loss')
 
@@ -171,8 +171,8 @@ def train(target, dataset, cluster_spec):
           loss_name = l.op.name
           # Name each loss as '(raw)' and name the moving average version of the
           # loss as the original loss name.
-          tf.summary.scalar(loss_name + ' (raw)', l)
-          tf.summary.scalar(loss_name, loss_averages.average(l))
+          tf.compat.v1.summary.scalar(loss_name + ' (raw)', l)
+          tf.compat.v1.summary.scalar(loss_name, loss_averages.average(l))
 
         # Add dependency to compute loss_averages.
         with tf.control_dependencies([loss_averages_op]):
@@ -187,21 +187,21 @@ def train(target, dataset, cluster_spec):
           inception.MOVING_AVERAGE_DECAY, global_step)
 
       variables_to_average = (
-          tf.trainable_variables() + tf.moving_average_variables())
+          tf.compat.v1.trainable_variables() + tf.compat.v1.moving_average_variables())
 
       # Add histograms for model variables.
       for var in variables_to_average:
-        tf.summary.histogram(var.op.name, var)
+        tf.compat.v1.summary.histogram(var.op.name, var)
 
       # Create synchronous replica optimizer.
-      opt = tf.train.SyncReplicasOptimizer(
+      opt = tf.compat.v1.train.SyncReplicasOptimizer(
           opt,
           replicas_to_aggregate=num_replicas_to_aggregate,
           total_num_replicas=num_workers,
           variable_averages=exp_moving_averager,
           variables_to_average=variables_to_average)
 
-      batchnorm_updates = tf.get_collection(slim.ops.UPDATE_OPS_COLLECTION)
+      batchnorm_updates = tf.compat.v1.get_collection(slim.ops.UPDATE_OPS_COLLECTION)
       assert batchnorm_updates, 'Batchnorm updates are missing'
       batchnorm_updates_op = tf.group(*batchnorm_updates)
       # Add dependency to compute batchnorm_updates.
@@ -214,7 +214,7 @@ def train(target, dataset, cluster_spec):
       # Add histograms for gradients.
       for grad, var in grads:
         if grad is not None:
-          tf.summary.histogram(var.op.name + '/gradients', grad)
+          tf.compat.v1.summary.histogram(var.op.name + '/gradients', grad)
 
       apply_gradients_op = opt.apply_gradients(grads, global_step=global_step)
 
@@ -227,19 +227,19 @@ def train(target, dataset, cluster_spec):
       init_tokens_op = opt.get_init_tokens_op()
 
       # Create a saver.
-      saver = tf.train.Saver(max_to_keep=100)
+      saver = tf.compat.v1.train.Saver(max_to_keep=100)
 
       # Build the summary operation based on the TF collection of Summaries.
-      summary_op = tf.summary.merge_all()
+      summary_op = tf.compat.v1.summary.merge_all()
 
       # Build an initialization operation to run below.
-      init_op = tf.global_variables_initializer()
+      init_op = tf.compat.v1.global_variables_initializer()
 
       # We run the summaries in the same thread as the training operations by
       # passing in None for summary_op to avoid a summary_thread being started.
       # Running summaries and training operations in parallel could run out of
       # GPU memory.
-      sv = tf.train.Supervisor(is_chief=is_chief,
+      sv = tf.compat.v1.train.Supervisor(is_chief=is_chief,
                                logdir=FLAGS.train_dir,
                                init_op=init_op,
                                summary_op=None,
@@ -247,9 +247,9 @@ def train(target, dataset, cluster_spec):
                                saver=saver,
                                save_model_secs=FLAGS.save_interval_secs)
 
-      tf.logging.info('%s Supervisor' % datetime.now())
+      tf.compat.v1.logging.info('%s Supervisor' % datetime.now())
 
-      sess_config = tf.ConfigProto(
+      sess_config = tf.compat.v1.ConfigProto(
           allow_soft_placement=True,
           log_device_placement=FLAGS.log_device_placement)
 
@@ -257,9 +257,9 @@ def train(target, dataset, cluster_spec):
       sess = sv.prepare_or_wait_for_session(target, config=sess_config)
 
       # Start the queue runners.
-      queue_runners = tf.get_collection(tf.GraphKeys.QUEUE_RUNNERS)
+      queue_runners = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.QUEUE_RUNNERS)
       sv.start_queue_runners(sess, queue_runners)
-      tf.logging.info('Started %d queues for processing input data.',
+      tf.compat.v1.logging.info('Started %d queues for processing input data.',
                       len(queue_runners))
 
       if is_chief:
@@ -283,22 +283,22 @@ def train(target, dataset, cluster_spec):
             examples_per_sec = FLAGS.batch_size / float(duration)
             format_str = ('Worker %d: %s: step %d, loss = %.2f'
                           '(%.1f examples/sec; %.3f  sec/batch)')
-            tf.logging.info(format_str %
+            tf.compat.v1.logging.info(format_str %
                             (FLAGS.task_id, datetime.now(), step, loss_value,
                              examples_per_sec, duration))
 
           # Determine if the summary_op should be run on the chief worker.
           if is_chief and next_summary_time < time.time():
-            tf.logging.info('Running Summary operation on the chief.')
+            tf.compat.v1.logging.info('Running Summary operation on the chief.')
             summary_str = sess.run(summary_op)
             sv.summary_computed(sess, summary_str)
-            tf.logging.info('Finished running Summary operation.')
+            tf.compat.v1.logging.info('Finished running Summary operation.')
 
             # Determine the next time for running the summary.
             next_summary_time += FLAGS.save_summaries_secs
         except:
           if is_chief:
-            tf.logging.info('Chief got exception while running!')
+            tf.compat.v1.logging.info('Chief got exception while running!')
           raise
 
       # Stop the supervisor.  This also waits for service threads to finish.

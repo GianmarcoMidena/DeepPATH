@@ -22,15 +22,15 @@ import numpy as np
 #from inception.imagenet_data import ImagenetData
 import os
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('ImageSet_basename', 'test_',
+tf.compat.v1.app.flags.DEFINE_string('ImageSet_basename', 'test_',
                            """Either 'test_', 'valid' or 'train'.""")
 
-tf.app.flags.DEFINE_string('TVmode', 'test',
+tf.compat.v1.app.flags.DEFINE_string('TVmode', 'test',
                            """Either 'test' or 'valid' (test prep the output for AUC computation and expects 1 file per slide - valid only saves accuracy""")
 
-tf.app.flags.DEFINE_string('mode', '0_softmax',
+tf.compat.v1.app.flags.DEFINE_string('mode', '0_softmax',
                             """0_softmax or 1_sigmoid.""")
 
 
@@ -40,7 +40,7 @@ def main(unused_argv=None):
   input_path = os.path.join(FLAGS.data_dir, FLAGS.ImageSet_basename + '*')
   print(input_path)
   #FLAGS.batch_size = 30
-  data_files = tf.gfile.Glob(input_path)
+  data_files = tf.io.gfile.glob(input_path)
   print(data_files)
 
   mydict={}
@@ -274,4 +274,4 @@ def main(unused_argv=None):
   """
 
 if __name__ == '__main__':
-  tf.app.run()
+  tf.compat.v1.app.run()

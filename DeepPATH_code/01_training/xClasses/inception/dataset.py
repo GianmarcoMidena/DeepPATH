@@ -31,14 +31,14 @@ import os
 
 import tensorflow as tf
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
 # Basic model parameters.
 #tf.app.flags.DEFINE_string('data_dir', '/tmp/mydata',
 #                           """Path to the processed data, i.e. """
 #                           """TFRecord of Example protos.""")
 
-tf.app.flags.DEFINE_string('data_dir', '/ifs/home/coudrn01/NN/Lung/Test_All512pxTiled/6_Healthy_Cancer',
+tf.compat.v1.app.flags.DEFINE_string('data_dir', '/ifs/home/coudrn01/NN/Lung/Test_All512pxTiled/6_Healthy_Cancer',
                            """Path to the processed data, i.e. """
                            """TFRecord of Example protos.""")
 
@@ -89,7 +89,7 @@ class Dataset(object):
     tf_record_pattern = os.path.join(FLAGS.data_dir, '%s-*' % self.subset)
     print('!!!!!!!!!!!!!!')
     print(tf_record_pattern)
-    data_files = tf.gfile.Glob(tf_record_pattern)
+    data_files = tf.io.gfile.glob(tf_record_pattern)
     if not data_files:
       print('No files found for dataset %s/%s at %s' % (self.name,
                                                         self.subset,
@@ -107,4 +107,4 @@ class Dataset(object):
     Returns:
       Reader object that reads the data set.
     """
-    return tf.TFRecordReader()
+    return tf.compat.v1.TFRecordReader()

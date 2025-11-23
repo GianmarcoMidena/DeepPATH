@@ -36,7 +36,7 @@ class CollectionsTest(tf.test.TestCase):
     batch_size = 5
     height, width = 299, 299
     with self.test_session():
-      inputs = tf.random_uniform((batch_size, height, width, 3))
+      inputs = tf.random.uniform((batch_size, height, width, 3))
       with slim.arg_scope([slim.ops.conv2d],
                           batch_norm_params={'decay': 0.9997}):
         slim.inception.inception_v3(inputs)
@@ -52,7 +52,7 @@ class CollectionsTest(tf.test.TestCase):
     batch_size = 5
     height, width = 299, 299
     with self.test_session():
-      inputs = tf.random_uniform((batch_size, height, width, 3))
+      inputs = tf.random.uniform((batch_size, height, width, 3))
       with slim.arg_scope([slim.ops.conv2d],
                           batch_norm_params=None):
         slim.inception.inception_v3(inputs)
@@ -68,7 +68,7 @@ class CollectionsTest(tf.test.TestCase):
     batch_size = 5
     height, width = 299, 299
     with self.test_session():
-      inputs = tf.random_uniform((batch_size, height, width, 3))
+      inputs = tf.random.uniform((batch_size, height, width, 3))
       with slim.arg_scope([slim.ops.conv2d],
                           batch_norm_params={'decay': 0.9997}):
         slim.inception.inception_v3(inputs)
@@ -95,11 +95,11 @@ class CollectionsTest(tf.test.TestCase):
     batch_size = 5
     height, width = 299, 299
     with self.test_session():
-      inputs = tf.random_uniform((batch_size, height, width, 3))
+      inputs = tf.random.uniform((batch_size, height, width, 3))
       with slim.arg_scope([slim.ops.conv2d],
                           batch_norm_params={'decay': 0.9997}):
         slim.inception.inception_v3(inputs)
-      variables_to_restore = tf.get_collection(
+      variables_to_restore = tf.compat.v1.get_collection(
           slim.variables.VARIABLES_TO_RESTORE)
       self.assertEqual(len(variables_to_restore), 388)
       self.assertListEqual(variables_to_restore, get_variables())
@@ -108,11 +108,11 @@ class CollectionsTest(tf.test.TestCase):
     batch_size = 5
     height, width = 299, 299
     with self.test_session():
-      inputs = tf.random_uniform((batch_size, height, width, 3))
+      inputs = tf.random.uniform((batch_size, height, width, 3))
       with slim.arg_scope([slim.ops.conv2d],
                           batch_norm_params={'decay': 0.9997}):
         slim.inception.inception_v3(inputs, restore_logits=False)
-      variables_to_restore = tf.get_collection(
+      variables_to_restore = tf.compat.v1.get_collection(
           slim.variables.VARIABLES_TO_RESTORE)
       self.assertEqual(len(variables_to_restore), 384)
 
@@ -120,10 +120,10 @@ class CollectionsTest(tf.test.TestCase):
     batch_size = 5
     height, width = 299, 299
     with self.test_session():
-      inputs = tf.random_uniform((batch_size, height, width, 3))
+      inputs = tf.random.uniform((batch_size, height, width, 3))
       with slim.arg_scope([slim.ops.conv2d, slim.ops.fc], weight_decay=0.00004):
         slim.inception.inception_v3(inputs)
-      losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+      losses = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
       self.assertEqual(len(losses), len(get_variables_by_name('weights')))
 
   def testTotalLossWithoutRegularization(self):
@@ -131,8 +131,8 @@ class CollectionsTest(tf.test.TestCase):
     height, width = 299, 299
     num_classes = 1001
     with self.test_session():
-      inputs = tf.random_uniform((batch_size, height, width, 3))
-      dense_labels = tf.random_uniform((batch_size, num_classes))
+      inputs = tf.random.uniform((batch_size, height, width, 3))
+      dense_labels = tf.random.uniform((batch_size, num_classes))
       with slim.arg_scope([slim.ops.conv2d, slim.ops.fc], weight_decay=0):
         logits, end_points = slim.inception.inception_v3(
             inputs,
@@ -148,7 +148,7 @@ class CollectionsTest(tf.test.TestCase):
                                        label_smoothing=0.1,
                                        weight=0.4,
                                        scope='aux_loss')
-      losses = tf.get_collection(slim.losses.LOSSES_COLLECTION)
+      losses = tf.compat.v1.get_collection(slim.losses.LOSSES_COLLECTION)
       self.assertEqual(len(losses), 2)
 
   def testTotalLossWithRegularization(self):
@@ -156,8 +156,8 @@ class CollectionsTest(tf.test.TestCase):
     height, width = 299, 299
     num_classes = 1000
     with self.test_session():
-      inputs = tf.random_uniform((batch_size, height, width, 3))
-      dense_labels = tf.random_uniform((batch_size, num_classes))
+      inputs = tf.random.uniform((batch_size, height, width, 3))
+      dense_labels = tf.random.uniform((batch_size, num_classes))
       with slim.arg_scope([slim.ops.conv2d, slim.ops.fc], weight_decay=0.00004):
         logits, end_points = slim.inception.inception_v3(inputs, num_classes)
         # Cross entropy loss for the main softmax prediction.
@@ -171,9 +171,9 @@ class CollectionsTest(tf.test.TestCase):
                                        label_smoothing=0.1,
                                        weight=0.4,
                                        scope='aux_loss')
-      losses = tf.get_collection(slim.losses.LOSSES_COLLECTION)
+      losses = tf.compat.v1.get_collection(slim.losses.LOSSES_COLLECTION)
       self.assertEqual(len(losses), 2)
-      reg_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+      reg_losses = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
       self.assertEqual(len(reg_losses), 98)
 
 
